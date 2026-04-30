@@ -643,10 +643,10 @@ st.caption("Transforma Preliquidación en Valorizado formato MODASA (.xlsx)")
 st.divider()
 
 uploaded_files = st.file_uploader(
-    "Sube los archivos de Preliquidación (Ocupacional y Asistencial)",
+    "Sube los archivos de Preliquidación (Ocupacional y opcionalmente Asistencial)",
     type=['xls', 'xlsx'],
     accept_multiple_files=True,
-    help="Sube 2 archivos: uno Ocupacional y uno Asistencial",
+    help="Sube 1 archivo (Ocupacional) o 2 archivos (Ocupacional + Asistencial)",
 )
 
 st.subheader("Precios de Adicionales (S/)")
@@ -697,29 +697,40 @@ with c7:
 
 st.divider()
 
-if uploaded_files and len(uploaded_files) >= 2:
+if uploaded_files and len(uploaded_files) >= 1:
     if st.button("Generar Valorizado", type="primary", use_container_width=True):
         with st.spinner("Procesando…"):
             try:
-                ocup_file, asis_file = clasificar_archivos(uploaded_files)
-                if not ocup_file or not asis_file:
-                    st.error("No se pudo identificar cuál archivo es "
-                             "Ocupacional y cuál Asistencial. "
-                             "Verifica los nombres de los archivos.")
-                    st.stop()
+                ocup_file = None
+                asis_file = None
+                data_asis = None
+                col_asis = None
 
-                st.info(f"**Ocupacional:** {ocup_file.name}  \n"
-                        f"**Asistencial:** {asis_file.name}")
+                if len(uploaded_files) >= 2:
+                    ocup_file, asis_file = clasificar_archivos(uploaded_files)
+                    if not ocup_file or not asis_file:
+                        st.error("No se pudo identificar cuál archivo es "
+                                 "Ocupacional y cuál Asistencial. "
+                                 "Verifica los nombres de los archivos.")
+                        st.stop()
+                    st.info(f"**Ocupacional:** {ocup_file.name}  \n"
+                            f"**Asistencial:** {asis_file.name}")
+                else:
+                    ocup_file = uploaded_files[0]
+                    st.info(f"**Ocupacional:** {ocup_file.name}  \n"
+                            f"**Asistencial:** no proporcionado (sin toxicológicos)")
 
                 data_ocup, col_ocup, miss_o = leer_ocupacional(ocup_file)
-                data_asis, col_asis, miss_a = leer_asistencial(asis_file)
+
+                if asis_file:
+                    data_asis, col_asis, miss_a = leer_asistencial(asis_file)
+                    if miss_a:
+                        st.warning(f"Columnas no encontradas (Asistencial): "
+                                   f"{miss_a}")
 
                 if miss_o:
                     st.warning(f"Columnas no encontradas (Ocupacional): "
                                f"{miss_o}")
-                if miss_a:
-                    st.warning(f"Columnas no encontradas (Asistencial): "
-                               f"{miss_a}")
 
                 (periodicos, retiro,
                  adicionales_reg,
@@ -770,8 +781,5 @@ if uploaded_files and len(uploaded_files) >= 2:
             except Exception as e:
                 st.error(f"Error: {e}")
 
-elif uploaded_files and len(uploaded_files) == 1:
-    st.warning("Sube ambos archivos: Preliquidación Ocupacional "
-               "y Asistencial.")
 else:
-    st.info("Sube los archivos de Preliquidación para comenzar.")
+    st.info("Sube al menos el archivo de Preliquidación Ocupacional para comenzar.")
