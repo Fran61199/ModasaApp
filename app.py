@@ -380,6 +380,10 @@ def procesar_datos(data_ocup, col_ocup, data_asis, col_asis,
             if has_psico:
                 precio_adicional += precios['PSICOSENSOMETRICO']
                 obs_adic_parts.append(EXAM_NAMES['PSICOSENSOMETRICO'])
+        elif perfil_num == 5:
+            if has_grupo:
+                precio_adicional += precios['GRUPO_SANGUINEO']
+                obs_adic_parts.append(EXAM_NAMES['GRUPO_SANGUINEO'])
 
         obs_emo_parts = []
         if has_grupo:
