@@ -643,63 +643,65 @@ if not activo:
     st.stop()
 
 st.title("Valorizado MODASA")
-st.caption("Transforma Preliquidación en Valorizado formato MODASA (.xlsx)")
-st.divider()
-
-uploaded_files = st.file_uploader(
-    "Sube los archivos de Preliquidación (Ocupacional y opcionalmente Asistencial)",
-    type=['xls', 'xlsx'],
-    accept_multiple_files=True,
-    help="Sube 1 archivo (Ocupacional) o 2 archivos (Ocupacional + Asistencial)",
+st.markdown(
+    "Genera automáticamente el **Valorizado en formato Excel** "
+    "a partir de los archivos de Preliquidación."
 )
 
-st.subheader("Precios de Adicionales (S/)")
-c1, c2 = st.columns(2)
-with c1:
-    p_grupo = st.number_input("Grupo Sanguíneo y Factor RH", value=5.0,
-                              min_value=0.0, step=1.0)
-    p_somn = st.number_input("Test de Somnolencia (Epworth)", value=3.0,
-                             min_value=0.0, step=1.0)
-with c2:
-    p_psico = st.number_input("Psicosensométrico", value=25.0,
-                              min_value=0.0, step=1.0)
-    p_yosh = st.number_input("Test de Yoshitake", value=2.0,
-                             min_value=0.0, step=1.0)
+st.divider()
 
-precios = {
-    'GRUPO_SANGUINEO': p_grupo,
-    'PSICOSENSOMETRICO': p_psico,
-    'SOMNOLENCIA': p_somn,
-    'YOSHITAKE': p_yosh,
-}
-
-st.subheader("Precios de Toxicológico (S/)")
-c3, c4 = st.columns(2)
-with c3:
-    p_panel5d = st.number_input("Panel 5D", value=32.0,
-                                min_value=0.0, step=1.0)
-with c4:
-    p_paquete = st.number_input("Cocaína + Marihuana + Metanfetamina",
-                                value=32.0, min_value=0.0, step=1.0)
-
-precios_toxi = {
-    'PANEL_5D': p_panel5d,
-    'COCA_MARI_META': p_paquete,
-}
-
-st.subheader("Configuración del archivo")
-c5, c6, c7 = st.columns(3)
-with c5:
-    mes_idx = st.selectbox("Mes", options=list(MESES_ES.keys()),
-                           format_func=lambda x: MESES_ES[x],
-                           index=datetime.now().month - 1)
-with c6:
-    anio = st.number_input("Año", value=datetime.now().year,
-                           min_value=2020, max_value=2035)
-with c7:
-    version = st.text_input("Versión", value="V3")
+st.markdown("### Pasos para usar la herramienta")
+st.markdown(
+    """
+1. **Sube tu(s) archivo(s)** de Preliquidación en la zona de carga de abajo.
+   - Solo el **Ocupacional** si no tienes toxicológicos.
+   - **Ocupacional + Asistencial** si incluyes toxicológicos.
+2. **Presiona el botón** "Generar Valorizado".
+3. **Descarga el archivo** Excel generado con el botón de descarga.
+"""
+)
 
 st.divider()
+
+st.markdown("#### Paso 1: Sube los archivos")
+uploaded_files = st.file_uploader(
+    "Arrastra o selecciona los archivos Excel de Preliquidación",
+    type=['xls', 'xlsx'],
+    accept_multiple_files=True,
+    help="Formatos aceptados: .xls y .xlsx",
+)
+
+precios = {
+    'GRUPO_SANGUINEO': 5.0,
+    'PSICOSENSOMETRICO': 25.0,
+    'SOMNOLENCIA': 3.0,
+    'YOSHITAKE': 2.0,
+}
+
+precios_toxi = {
+    'PANEL_5D': 80.0,
+    'COCA_MARI_META': 32.0,
+}
+
+with st.expander("Ver precios configurados"):
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**Adicionales**")
+        st.markdown(f"- Grupo Sanguíneo: **S/ {precios['GRUPO_SANGUINEO']:.2f}**")
+        st.markdown(f"- Somnolencia: **S/ {precios['SOMNOLENCIA']:.2f}**")
+        st.markdown(f"- Yoshitake: **S/ {precios['YOSHITAKE']:.2f}**")
+        st.markdown(f"- Psicosensométrico: **S/ {precios['PSICOSENSOMETRICO']:.2f}**")
+    with c2:
+        st.markdown("**Toxicológico**")
+        st.markdown(f"- Panel 5D: **S/ {precios_toxi['PANEL_5D']:.2f}**")
+        st.markdown(f"- Coca+Mari+Meta: **S/ {precios_toxi['COCA_MARI_META']:.2f}**")
+
+mes_idx = datetime.now().month
+anio = datetime.now().year
+
+st.divider()
+
+st.markdown("#### Paso 2: Genera el Valorizado")
 
 if uploaded_files and len(uploaded_files) >= 1:
     if st.button("Generar Valorizado", type="primary", use_container_width=True):
@@ -756,6 +758,7 @@ if uploaded_files and len(uploaded_files) >= 1:
 
                 st.success("Valorizado generado exitosamente.")
 
+                st.markdown("#### Resumen")
                 cols = st.columns(3)
                 cols[0].metric("EMO DOKTUZ",
                                f"{len(periodicos)} pac.",
@@ -771,8 +774,9 @@ if uploaded_files and len(uploaded_files) >= 1:
                 st.metric("TOTAL FACTURACIÓN",
                           f"S/ {total_emo + total_emor + total_adic:,.2f}")
 
-                file_name = (f"Valorizado Doktuz - Modasa - "
-                             f"{MESES_ES[mes_idx]} {anio} {version}.xlsx")
+                st.divider()
+                st.markdown("#### Paso 3: Descarga tu archivo")
+                file_name = f"Valorizado_MODASA_{MESES_ES[mes_idx]}_{anio}.xlsx"
                 st.download_button(
                     label=f"Descargar {file_name}",
                     data=excel_bytes,
@@ -786,4 +790,4 @@ if uploaded_files and len(uploaded_files) >= 1:
                 st.error(f"Error: {e}")
 
 else:
-    st.info("Sube al menos el archivo de Preliquidación Ocupacional para comenzar.")
+    st.info("Sube al menos un archivo de Preliquidación Ocupacional para comenzar.")
